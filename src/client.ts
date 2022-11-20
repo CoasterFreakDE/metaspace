@@ -82,6 +82,7 @@ export function setupClient(socket: WebSocket) {
       // Update Canvas position so the cursor is always in the center
       canvas.style.left = `${-(x - (window.innerWidth / 2))}px`
       canvas.style.top = `${-(y - (window.innerHeight / 2))}px`
+
       if(!last_state || (last_state.x !== x || last_state.y !== y || last_state.rotation !== rotation)) {
         if(socket.readyState !== WebSocket.OPEN) return
         socket.send(JSON.stringify({event: 'move', player: {x, y, rotation}}))
@@ -321,6 +322,13 @@ export function setupClient(socket: WebSocket) {
           existing.x = player.x
           existing.y = player.y
           existing.rotation = player.rotation
+        }
+
+        // Test if self
+        if (player.id === data.playerID) {
+          // Update coordinates
+          const coords = document.querySelector<HTMLDivElement>('#coords')!
+          coords.innerText = `x: ${player.x.toFixed(2)}, y: ${player.y.toFixed(2)}`
         }
 
         // Update the position of the enemy cursors

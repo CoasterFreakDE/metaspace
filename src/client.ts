@@ -222,7 +222,6 @@ export function setupClient(socket: WebSocket) {
 
   socket.onmessage = (raw) => {
     const data = JSON.parse(raw.data)
-    console.log(data)
 
     switch(data.event) {
       case 'players':
@@ -255,8 +254,7 @@ export function setupClient(socket: WebSocket) {
         break
       case 'move':
         const player = data.player as Player
-        console.log(player)
-        const existing = players.find((p) => p.id === data.playerID)
+        const existing = players.find((p) => p.id === player.id)
         if (existing) {
           existing.x = player.x
           existing.y = player.y
@@ -265,9 +263,7 @@ export function setupClient(socket: WebSocket) {
 
         // Update the position of the enemy cursors
         const enemies = players.filter((p) => p.id !== data.playerID)
-        console.log(enemies)
         enemies.forEach((enemy) => {
-          console.log(enemy)
           const enemyCursor = document.getElementById(enemy.id) as HTMLElement
           enemyCursor.style.left = `${enemy.x}px`
           enemyCursor.style.top = `${enemy.y}px`

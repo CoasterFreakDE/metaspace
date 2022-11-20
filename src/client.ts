@@ -58,6 +58,11 @@ export function setupClient(socket: WebSocket) {
   let speed = 0
   let keys_down = new Set<string>()
 
+  let view_relative = true
+  if(localStorage.getItem('view_relative') === 'false') {
+    view_relative = false
+  }
+
   let last_state: State
 
   const setCursor = (x: number, y: number, rotation: number = 0) => {
@@ -136,84 +141,127 @@ export function setupClient(socket: WebSocket) {
         }
     })
 
-    const move = () => {
+  function moveRelative(max_speed: number) {
+    if(keys_down.has('up')) {
+      if(speed < max_speed) {
+        speed += 0.2
+      }
+    } else if(keys_down.has('down')) {
+      if(speed > -max_speed) {
+        speed -= 0.2
+      }
+    } else {
+      if(speed > 0) {
+        speed -= 0.2
+      } else if(speed < 0) {
+        speed += 0.2
+      }
+    }
+
+    if(keys_down.has('left')) {
+      direction -= 3
+    }
+    if(keys_down.has('right')) {
+      direction += 3
+    }
+
+    const radians = (direction * Math.PI) / 180
+    const dx = Math.cos(radians) * speed
+    const dy = Math.sin(radians) * speed
+
+    x += dx
+    y += dy
+
+    setCursor(x, y, direction + 90)
+  }
+
+  function moveAbsolute(changeDirection: boolean, max_speed: number) {
+    if(speed < max_speed) {
+      speed += 1
+    } else if(speed > max_speed) {
+      speed -= 1
+    }
+    let direction_x = 0
+    let direction_y = 0
+    if (keys_down.has('up')) {
+      y -= speed
+      if (y < 0) {
+        y = 0
+      } else if (y > canvas.clientHeight) {
+        y = canvas.clientHeight
+      }
+      direction_y += 1
+    }
+    if (keys_down.has('down')) {
+      y += speed
+      if (y < 0) {
+        y = 0
+      } else if (y > (canvas.clientHeight - cursor.clientHeight)) {
+        y = (canvas.clientHeight - cursor.clientHeight)
+      }
+      direction_y -= 1
+    }
+    if (keys_down.has('left')) {
+      x -= speed
+      if (x < 0) {
+        x = 0
+      } else if (x > canvas.clientWidth) {
+        x = canvas.clientWidth
+      }
+      direction_x -= 1
+    }
+    if (keys_down.has('right')) {
+      x += speed
+      if (x < 0) {
+        x = 0
+      } else if (x > (canvas.clientWidth - cursor.clientWidth)) {
+        x = (canvas.clientWidth - cursor.clientWidth)
+      }
+      direction_x += 1
+    }
+
+    if (changeDirection) {
+      direction = 0
+      if (direction_x === 1 && direction_y === 1) {
+        direction = 45
+      }
+      if (direction_x === 1 && direction_y === -1) {
+        direction = 135
+      }
+      if (direction_x === -1 && direction_y === 1) {
+        direction = -45
+      }
+      if (direction_x === -1 && direction_y === -1) {
+        direction = -135
+      }
+      if (direction_x === 1 && direction_y === 0) {
+        direction = 90
+      }
+      if (direction_x === -1 && direction_y === 0) {
+        direction = -90
+      }
+      if (direction_x === 0 && direction_y === 1) {
+        direction = 0
+      }
+      if (direction_x === 0 && direction_y === -1) {
+        direction = 180
+      }
+    }
+    setCursor(x, y, direction)
+  }
+
+  const move = () => {
       let changeDirection = true
       if(keys_down.size == 0 || (keys_down.size == 1 && keys_down.has('shift'))) {
           changeDirection = false
       }
       const max_speed = keys_down.has('shift') ? 10 : 5
-      if(speed < max_speed) {
-           speed += 1
-       } else if(speed > max_speed) {
-           speed -= 1
-       }
-      let direction_x = 0
-      let direction_y = 0
-      if(keys_down.has('up')) {
-            y -= speed
-            if (y < 0) {
-                y = 0
-            } else if(y > canvas.clientHeight) {
-                y = canvas.clientHeight
-            }
-            direction_y += 1
-        }
-        if(keys_down.has('down')) {
-            y += speed
-            if (y < 0) {
-              y = 0
-            } else if(y > (canvas.clientHeight - cursor.clientHeight)) {
-              y = (canvas.clientHeight - cursor.clientHeight)
-            }
-            direction_y -= 1
-        }
-        if(keys_down.has('left')) {
-            x -= speed
-            if (x < 0) {
-                x = 0
-            } else if(x > canvas.clientWidth) {
-                x =  canvas.clientWidth
-            }
-            direction_x -= 1
-        }
-        if(keys_down.has('right')) {
-            x += speed
-            if (x < 0) {
-              x = 0
-            } else if(x > (canvas.clientWidth - cursor.clientWidth)) {
-              x = (canvas.clientWidth - cursor.clientWidth)
-            }
-          direction_x += 1
-        }
 
-        if(changeDirection) {
-            direction = 0
-            if (direction_x === 1 && direction_y === 1) {
-                direction = 45
-            }
-            if (direction_x === 1 && direction_y === -1) {
-                direction = 135
-            }
-            if (direction_x === -1 && direction_y === 1) {
-                direction = -45
-            }
-            if (direction_x === -1 && direction_y === -1) {
-                direction = -135
-            }
-            if (direction_x === 1 && direction_y === 0) {
-                direction = 90
-            }
-            if (direction_x === -1 && direction_y === 0) {
-                direction = -90
-            }
-            if (direction_x === 0 && direction_y === 1) {
-                direction = 0
-            }
-            if (direction_x === 0 && direction_y === -1) {
-                direction = 180
-            }
-        }
-        setCursor(x, y, direction)
+      if(view_relative) {
+        moveRelative(max_speed)
+        return
+      }
+      moveAbsolute(changeDirection, max_speed);
     }
 
     setInterval(move, 1000/60)

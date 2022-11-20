@@ -2,6 +2,8 @@
   --darkest-dark: #0f0f0f;
   --dark: #181818;
   --light: #282828;
+  --lighter: #404040;
+  --lightest: #9e9e9e;
 
   --self: #EB459E;
   --allies: #57F287;
@@ -52,14 +54,6 @@
   fill: var(--self);
 }
 
-.arrow #ally {
-  fill: var(--allies);
-}
-
-.arrow #enemy {
-  fill: var(--enemies);
-}
-
 .canvas {
     position: fixed;
     top: 0;
@@ -92,4 +86,16 @@
 .bg-text > h2 {
     font-weight: 500;
     color: var(--dark);
+}
+
+.nametag {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 4;
+  transition: transform 0.1s ease;
+  background-color: var(--dark);
+  color: var(--lightest);
+  border-radius: 15px;
+  padding: 0 10px 0 10px;
 }

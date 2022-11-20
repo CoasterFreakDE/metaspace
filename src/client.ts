@@ -29,6 +29,14 @@ function createCursor(color: string) {
   return svg;
 }
 
+function createNametag(playerId: string, name: string) {
+  const nametag = document.createElement('div')
+  nametag.classList.add('nametag')
+  nametag.id = `nametag-${playerId}`
+  nametag.innerText = name
+  return nametag
+}
+
 // function createAlly(id: string) {
 //   const canvas = document.querySelector<HTMLDivElement>('.canvas')!
 //   const ally = createCursor('var(--allies)')
@@ -43,6 +51,7 @@ function createEnemy(id: string) {
   const enemy = createCursor('var(--enemies)')
   enemy.id = id
   canvas.appendChild(enemy)
+  canvas.appendChild(createNametag(id, id))
 
   return enemy
 }
@@ -51,6 +60,7 @@ export function setupClient(socket: WebSocket) {
   const canvas = document.querySelector<HTMLDivElement>('.canvas')!
   const cursor = createCursor('var(--self)')
   canvas.appendChild(cursor)
+  canvas.appendChild(createNametag('self', 'self'))
 
   let x = 500
   let y = 500
@@ -158,11 +168,21 @@ export function setupClient(socket: WebSocket) {
       }
     }
 
+    if(speed < 0.2 && speed > -0.2) {
+      speed = 0
+    }
+
     if(keys_down.has('left')) {
       direction -= 3
+      if(keys_down.has('down')) {
+        direction += 6
+      }
     }
     if(keys_down.has('right')) {
       direction += 3
+      if(keys_down.has('down')) {
+        direction -= 6
+      }
     }
 
     const radians = (direction * Math.PI) / 180
@@ -172,7 +192,23 @@ export function setupClient(socket: WebSocket) {
     x += dx
     y += dy
 
+    if (x < 0) {
+      x = 0
+    } else if (x > canvas.clientWidth) {
+      x = canvas.clientWidth
+    }
+
+    if (y < 0) {
+      y = 0
+    } else if (y > canvas.clientHeight) {
+      y = canvas.clientHeight
+    }
+
     setCursor(x, y, direction + 90)
+    // Update nametag position
+    const nametag = document.getElementById(`nametag-self`) as HTMLElement
+    nametag.style.left = `${x}px`
+    nametag.style.top = `${y - 30}px`
   }
 
   function moveAbsolute(changeDirection: boolean, max_speed: number) {
@@ -248,6 +284,11 @@ export function setupClient(socket: WebSocket) {
       }
     }
     setCursor(x, y, direction)
+
+    // Update nametag position
+    const nametag = document.getElementById(`nametag-self`) as HTMLElement
+    nametag.style.left = `${x}px`
+    nametag.style.top = `${y - 30}px`
   }
 
   const move = () => {
@@ -255,7 +296,7 @@ export function setupClient(socket: WebSocket) {
       if(keys_down.size == 0 || (keys_down.size == 1 && keys_down.has('shift'))) {
           changeDirection = false
       }
-      const max_speed = keys_down.has('shift') ? 10 : 5
+      const max_speed = keys_down.has('shift') ? 10 : keys_down.size == 0 ? 0 : 5
 
       if(view_relative) {
         moveRelative(max_speed)
@@ -283,6 +324,8 @@ export function setupClient(socket: WebSocket) {
             const element = document.getElementById(old_player.id)
             if (element) {
               element.remove()
+              const nametag = document.getElementById(`nametag-${old_player.id}`) as HTMLElement
+              nametag.remove()
             }
           }
         }
@@ -316,6 +359,11 @@ export function setupClient(socket: WebSocket) {
           enemyCursor.style.left = `${enemy.x}px`
           enemyCursor.style.top = `${enemy.y}px`
           enemyCursor.style.transform = `rotate(${enemy.rotation}deg)`
+
+          // Update nametag position
+          const nametag = document.getElementById(`nametag-${enemy.id}`) as HTMLElement
+          nametag.style.left = `${enemy.x}px`
+          nametag.style.top = `${enemy.y - 30}px`
         });
     }
   };

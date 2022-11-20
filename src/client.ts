@@ -1,4 +1,3 @@
-import {Socket} from "socket.io-client";
 
 interface Player {
   id: string,
@@ -6,6 +5,12 @@ interface Player {
   y: number,
   rotation: number,
   team: 1 | 2
+}
+
+interface State {
+  x: number,
+  y: number,
+  rotation: number,
 }
 
 function createCursor(color: string) {
@@ -42,7 +47,7 @@ function createEnemy(id: string) {
   return enemy
 }
 
-export function setupClient(socket: Socket) {
+export function setupClient(socket: WebSocket) {
   const canvas = document.querySelector<HTMLDivElement>('.canvas')!
   const cursor = createCursor('var(--self)')
   canvas.appendChild(cursor)
@@ -53,14 +58,21 @@ export function setupClient(socket: Socket) {
   let speed = 0
   let keys_down = new Set<string>()
 
+  let last_state: State
+
   const setCursor = (x: number, y: number, rotation: number = 0) => {
       cursor.style.left = `${x}px`
       cursor.style.top = `${y}px`
       cursor.style.transform = `rotate(${rotation}deg)`
-      socket.emit('move', {x, y, rotation})
+      if(!last_state || (last_state.x !== x || last_state.y !== y || last_state.rotation !== rotation)) {
+        socket.send(JSON.stringify({event: 'move', player: {x, y, rotation}}))
+        last_state = {x, y, rotation}
+      }
   }
 
-  setCursor(x, y, direction)
+  socket.onopen = () => {
+    setCursor(x, y, direction)
+  }
 
   document.addEventListener('keydown', (event) => {
       event.preventDefault()
@@ -207,51 +219,55 @@ export function setupClient(socket: Socket) {
 
   let players: Player[] = []
 
-  socket.on("players", (data) => {
-    const new_players = data as Player[]
-    const old_players = players
-    players = new_players
-    for(const old_player of old_players) {
-      if (old_player.id === socket.id) continue
-      const new_player = new_players.find(player => player.id === old_player.id)
-      if(!new_player) {
-        const element = document.getElementById(old_player.id)
-        if(element) {
-          element.remove()
+  socket.onmessage = (raw) => {
+    const data = JSON.parse(raw.data)
+
+    switch(data.event) {
+      case 'players':
+        const new_players = data.players as Player[]
+        const old_players = players
+        players = new_players
+        for (const old_player of old_players) {
+          if (old_player.id === data.playerID) continue
+          const new_player = new_players.find(player => player.id === old_player.id)
+          if (!new_player) {
+            const element = document.getElementById(old_player.id)
+            if (element) {
+              element.remove()
+            }
+          }
         }
-      }
-    }
-    for(const new_player of new_players) {
-      if (new_player.id === socket.id) continue
-      const old_player = old_players.find(player => player.id === new_player.id)
-      if(!old_player) {
-        createEnemy(new_player.id)
-      }
-      const element = document.getElementById(new_player.id)
-      if(element) {
-        element.style.left = `${new_player.x}px`
-        element.style.top = `${new_player.y}px`
-        element.style.transform = `rotate(${new_player.rotation}deg)`
-      }
-    }
-  });
+        for (const new_player of new_players) {
+          if (new_player.id === data.playerID) continue
+          const old_player = old_players.find(player => player.id === new_player.id)
+          if (!old_player) {
+            createEnemy(new_player.id)
+          }
+          const element = document.getElementById(new_player.id)
+          if (element) {
+            element.style.left = `${new_player.x}px`
+            element.style.top = `${new_player.y}px`
+            element.style.transform = `rotate(${new_player.rotation}deg)`
+          }
+        }
+        break
+      case 'move':
+        const player = data as Player
+        const existing = players.find((p) => p.id === player.id)
+        if (existing) {
+          existing.x = player.x
+          existing.y = player.y
+          existing.rotation = player.rotation
+        }
 
-  socket.on("move", (data) => {
-    const player = data as Player
-    const existing = players.find((p) => p.id === player.id)
-    if (existing) {
-      existing.x = player.x
-      existing.y = player.y
-      existing.rotation = player.rotation
+        // Update the position of the enemy cursors
+        const enemies = players.filter((p) => p.id !== data.playerID)
+        enemies.forEach((enemy) => {
+          const enemyCursor = document.getElementById(enemy.id) as HTMLElement
+          enemyCursor.style.left = `${enemy.x}px`
+          enemyCursor.style.top = `${enemy.y}px`
+          enemyCursor.style.transform = `rotate(${enemy.rotation}deg)`
+        });
     }
-
-    // Update the position of the enemy cursors
-    const enemies = players.filter((p) => p.id !== socket.id)
-    enemies.forEach((enemy) => {
-      const enemyCursor = document.getElementById(enemy.id) as HTMLElement
-      enemyCursor.style.left = `${enemy.x}px`
-      enemyCursor.style.top = `${enemy.y}px`
-      enemyCursor.style.transform = `rotate(${enemy.rotation}deg)`
-    });
-  });
+  };
 }

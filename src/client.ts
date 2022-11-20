@@ -1,6 +1,8 @@
 
 interface Player {
   id: string,
+
+  name: string,
   x: number,
   y: number,
   rotation: number,
@@ -46,12 +48,12 @@ function createNametag(playerId: string, name: string) {
 //   return ally
 // }
 
-function createEnemy(id: string) {
+function createEnemy(id: string, name: string) {
   const canvas = document.querySelector<HTMLDivElement>('.canvas')!
   const enemy = createCursor('var(--enemies)')
   enemy.id = id
   canvas.appendChild(enemy)
-  canvas.appendChild(createNametag(id, id))
+  canvas.appendChild(createNametag(id, name))
 
   return enemy
 }
@@ -95,7 +97,26 @@ export function setupClient(socket: WebSocket, heartbeat: () => void) {
   setCursor(x, y, direction)
 
 
+  const console = document.querySelector<HTMLInputElement>('#console') as HTMLInputElement
+  const consolePreview = document.querySelector<HTMLDivElement>('#console-preview') as HTMLDivElement
+
+  console.onfocus = () => {
+    consolePreview.style.display = 'block'
+    socket.send(JSON.stringify({event: 'commands'}))
+  }
+
+  console.oninput = () => {
+    socket.send(JSON.stringify({event: 'commands'}))
+  }
+
+  console.onsuspend = () => {
+    consolePreview.style.display = 'none'
+  }
+
+
   document.addEventListener('keydown', (event) => {
+      const console = document.querySelector<HTMLInputElement>('#console') as HTMLInputElement
+      if(console === document.activeElement) return
       event.preventDefault()
       const key = event.key.toLowerCase()
       const up = key === 'arrowup' || key === 'w'
@@ -131,6 +152,15 @@ export function setupClient(socket: WebSocket, heartbeat: () => void) {
   })
 
     document.addEventListener('keyup', (event) => {
+        const console = document.querySelector<HTMLInputElement>('#console') as HTMLInputElement
+        if(console === document.activeElement) {
+          if(event.key === 'Enter') {
+            socket.send(JSON.stringify({event: 'console', command: console.value}))
+            console.value = ''
+          }
+          keys_down.clear()
+          return
+        }
         event.preventDefault()
         const key = event.key.toLowerCase()
         const up = key === 'arrowup' || key === 'w'
@@ -281,8 +311,49 @@ export function setupClient(socket: WebSocket, heartbeat: () => void) {
         socket.send(JSON.stringify({event: 'pong'}))
         heartbeat()
         break
+      case 'rename':
+        const new_player = data.player as Player
+        if (new_player.id === data.playerID) {
+          // Update name on nametag
+          const nametag = document.querySelector('#nametag-self') as HTMLDivElement
+          nametag.innerText = new_player.name
+          localStorage.setItem('name', new_player.name)
+        } else {
+          // Update name on nametag
+          const nametag = document.querySelector(`#nametag-${new_player.id}`) as HTMLDivElement
+          nametag.innerText = new_player.name
+
+          // Update player in players list
+          const player = players.find((player) => player.id === new_player.id)
+          if (player) {
+            player.name = new_player.name
+          }
+        }
+        break
+      case 'commands':
+        const commands = data.commands as string[]
+        const console = document.querySelector<HTMLInputElement>('#console') as HTMLInputElement
+        const autocomplete = document.querySelector<HTMLInputElement>('#console-preview') as HTMLInputElement
+        const commands_list = commands.filter((command) => command.startsWith(console.value))
+        autocomplete.innerText = commands_list.join('\n')
+        document.documentElement.style.setProperty('--console-height', `${commands_list.length * 20}px`)
+        break
       case 'players':
         const new_players = data.players as Player[]
+
+        // Update self
+        const self = new_players.find((player) => player.id === data.playerID)
+        if(self) {
+          // Update name on nametag
+          const nametag = document.querySelector('#nametag-self') as HTMLDivElement
+          nametag.innerText = self.name
+
+          if(localStorage.getItem('name')) {
+            socket.send(JSON.stringify({event: 'console', command: `/rename ${localStorage.getItem('name')}`}))
+          }
+        }
+
+
         const old_players = players
         players = new_players
         for (const old_player of old_players) {
@@ -301,7 +372,7 @@ export function setupClient(socket: WebSocket, heartbeat: () => void) {
           if (new_player.id === data.playerID) continue
           const old_player = old_players.find(player => player.id === new_player.id)
           if (!old_player) {
-            createEnemy(new_player.id)
+            createEnemy(new_player.id, new_player.name)
           }
           const element = document.getElementById(new_player.id)
           if (element) {

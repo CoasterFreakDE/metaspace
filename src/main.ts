@@ -7,6 +7,10 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
     <div class="hud">
         <div class="hud__item" id="coords"></div>
         <div class="hud__item" id="players">0 players connected</div>
+        
+        
+        <div class="hud__item" id="console-preview"></div>
+        <input class="hud__item" id="console" />
     </div>
    <div class="canvas">
      <div class="bg-text">

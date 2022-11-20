@@ -1,5 +1,6 @@
 :root {
   --darkest-dark: #0f0f0f;
+  --darker: #121212;
   --dark: #181818;
   --light: #282828;
   --lighter: #404040;
@@ -25,22 +26,6 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
-
-  -webkit-touch-callout: none; /* iOS Safari */
-  -webkit-user-select: none; /* Safari */
-  -khtml-user-select: none; /* Konqueror HTML */
-  -moz-user-select: none; /* Old versions of Firefox */
-  -ms-user-select: none; /* Internet Explorer/Edge */
-  user-select: none; /* Non-prefixed version, currently
-                                  supported by Chrome, Edge, Opera and Firefox */
-
-  user-drag: none;
-  -webkit-user-drag: none;
-  user-select: none;
-  -moz-user-select: none;
-  -webkit-user-select: none;
-  -ms-user-select: none;
-  pointer-events: none;
 }
 
 .cursor {
@@ -66,7 +51,21 @@
   background-repeat: repeat;
   background-size: 100px 100px;
 
-  border: white;
+  -webkit-touch-callout: none; /* iOS Safari */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Old versions of Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
+  user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+
+  user-drag: none;
+  -webkit-user-drag: none;
+  user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  pointer-events: none;
 }
 
 .hud {
@@ -146,4 +145,32 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+}
+
+#console, #console-preview {
+  position: fixed;
+  top: 100%;
+  left: 1%;
+  transform: translateY(-150%);
+  background-color: var(--dark);
+  color: var(--lightest);
+  border-radius: 15px;
+  text-align: left;
+  z-index: 10;
+  transition: transform 0.1s ease;
+  height: 24px;
+  overflow: hidden;
+  width: 98%;
+  opacity: 80%;
+  border: none;
+}
+
+#console:focus {
+  outline: none;
+}
+
+#console-preview {
+  transform: translateY(-300%);
+  background-color: var(--darker);
+  height: var(--console-height);
 }

@@ -65,14 +65,15 @@ export function setupClient(socket: WebSocket) {
       cursor.style.top = `${y}px`
       cursor.style.transform = `rotate(${rotation}deg)`
       if(!last_state || (last_state.x !== x || last_state.y !== y || last_state.rotation !== rotation)) {
+        if(socket.readyState !== WebSocket.OPEN) return
         socket.send(JSON.stringify({event: 'move', player: {x, y, rotation}}))
         last_state = {x, y, rotation}
       }
   }
 
-  socket.onopen = () => {
-    setCursor(x, y, direction)
-  }
+
+  setCursor(x, y, direction)
+
 
   document.addEventListener('keydown', (event) => {
       event.preventDefault()
@@ -221,6 +222,7 @@ export function setupClient(socket: WebSocket) {
 
   socket.onmessage = (raw) => {
     const data = JSON.parse(raw.data)
+    console.log(data)
 
     switch(data.event) {
       case 'players':
@@ -252,8 +254,9 @@ export function setupClient(socket: WebSocket) {
         }
         break
       case 'move':
-        const player = data as Player
-        const existing = players.find((p) => p.id === player.id)
+        const player = data.player as Player
+        console.log(player)
+        const existing = players.find((p) => p.id === data.playerID)
         if (existing) {
           existing.x = player.x
           existing.y = player.y
@@ -262,7 +265,9 @@ export function setupClient(socket: WebSocket) {
 
         // Update the position of the enemy cursors
         const enemies = players.filter((p) => p.id !== data.playerID)
+        console.log(enemies)
         enemies.forEach((enemy) => {
+          console.log(enemy)
           const enemyCursor = document.getElementById(enemy.id) as HTMLElement
           enemyCursor.style.left = `${enemy.x}px`
           enemyCursor.style.top = `${enemy.y}px`

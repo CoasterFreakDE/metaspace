@@ -62,8 +62,8 @@ export function setupClient(socket: WebSocket) {
   canvas.appendChild(cursor)
   canvas.appendChild(createNametag('self', 'self'))
 
-  let x = window.innerWidth / 2
-  let y = window.innerHeight / 2
+  let x = 0
+  let y = 0
   let direction = 0
   let speed = 0
   let keys_down = new Set<string>()
@@ -75,21 +75,22 @@ export function setupClient(socket: WebSocket) {
 
   let last_state: State
 
+  const sendMovement = (x: number, y: number, rotation: number = 0) => {
+    if(!last_state || (last_state.x !== x || last_state.y !== y || last_state.rotation !== rotation)) {
+      if(socket.readyState !== WebSocket.OPEN) return
+      socket.send(JSON.stringify({event: 'move', player: {x, y, rotation}}))
+      last_state = {x, y, rotation}
+    }
+  }
+
   const setCursor = (x: number, y: number, rotation: number = 0) => {
       cursor.style.left = `${x}px`
       cursor.style.top = `${y}px`
       cursor.style.transform = `rotate(${rotation}deg)`
       // Update Canvas position so the cursor is always in the center
       canvas.style.left = `${-(x - (window.innerWidth / 2))}px`
-      canvas.style.top = `${-(y - (window.innerHeight / 2))}px`
-
-      if(!last_state || (last_state.x !== x || last_state.y !== y || last_state.rotation !== rotation)) {
-        if(socket.readyState !== WebSocket.OPEN) return
-        socket.send(JSON.stringify({event: 'move', player: {x, y, rotation}}))
-        last_state = {x, y, rotation}
-      }
+      canvas.style.top = `${-(y - (window.innerHeight / 2)) - 100}px`
   }
-
 
   setCursor(x, y, direction)
 
@@ -196,11 +197,7 @@ export function setupClient(socket: WebSocket) {
     x += dx
     y += dy
 
-    setCursor(x, y, direction + 90)
-    // Update nametag position
-    const nametag = document.getElementById(`nametag-self`) as HTMLElement
-    nametag.style.left = `${x}px`
-    nametag.style.top = `${y - 30}px`
+    sendMovement(x, y, direction + 90)
   }
 
   function moveAbsolute(changeDirection: boolean, max_speed: number) {
@@ -255,12 +252,7 @@ export function setupClient(socket: WebSocket) {
         direction = 180
       }
     }
-    setCursor(x, y, direction)
-
-    // Update nametag position
-    const nametag = document.getElementById(`nametag-self`) as HTMLElement
-    nametag.style.left = `${x}px`
-    nametag.style.top = `${y - 30}px`
+    sendMovement(x, y, direction)
   }
 
   const move = () => {
@@ -329,6 +321,7 @@ export function setupClient(socket: WebSocket) {
           // Update coordinates
           const coords = document.querySelector<HTMLDivElement>('#coords')!
           coords.innerText = `x: ${player.x.toFixed(2)}, y: ${player.y.toFixed(2)}`
+          setCursor(player.x, player.y, player.rotation)
         }
 
         // Update the position of the enemy cursors

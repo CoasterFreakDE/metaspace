@@ -80,7 +80,7 @@
 }
 
 .hud .hud__item {
-  position: relative;
+  position: fixed;
   top: 2%;
   left: 50%;
   width: 10%;
@@ -90,6 +90,13 @@
   border-radius: 15px;
   padding: 2px;
   text-align: center;
+}
+
+#players {
+  position: absolute;
+  top: 2%;
+  left: 100%;
+  transform: translateX(-110%);
 }
 
 .bg-text {

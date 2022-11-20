@@ -56,7 +56,7 @@ function createEnemy(id: string) {
   return enemy
 }
 
-export function setupClient(socket: WebSocket) {
+export function setupClient(socket: WebSocket, heartbeat: () => void) {
   const canvas = document.querySelector<HTMLDivElement>('.canvas')!
   const cursor = createCursor('var(--self)')
   canvas.appendChild(cursor)
@@ -277,6 +277,10 @@ export function setupClient(socket: WebSocket) {
     const data = JSON.parse(raw.data)
 
     switch(data.event) {
+      case 'ping':
+        socket.send(JSON.stringify({event: 'pong'}))
+        heartbeat()
+        break
       case 'players':
         const new_players = data.players as Player[]
         const old_players = players
@@ -306,6 +310,10 @@ export function setupClient(socket: WebSocket) {
             element.style.transform = `rotate(${new_player.rotation}deg)`
           }
         }
+
+        // Update hud for players
+        const players_hud = document.getElementById('players') as HTMLElement
+        players_hud.innerHTML = players.length == 1 ? `You are alone` : `${players.length} players connected`
         break
       case 'move':
         const player = data.player as Player
@@ -328,15 +336,17 @@ export function setupClient(socket: WebSocket) {
         const enemies = players.filter((p) => p.id !== data.playerID)
         enemies.forEach((enemy) => {
           const enemyCursor = document.getElementById(enemy.id) as HTMLElement
-          enemyCursor.style.left = `${enemy.x}px`
+          enemyCursor.style.left = `${enemy.x - 15}px`
           enemyCursor.style.top = `${enemy.y}px`
           enemyCursor.style.transform = `rotate(${enemy.rotation}deg)`
 
           // Update nametag position
           const nametag = document.getElementById(`nametag-${enemy.id}`) as HTMLElement
-          nametag.style.left = `${enemy.x}px`
+          nametag.style.left = `${enemy.x - 15}px`
           nametag.style.top = `${enemy.y - 30}px`
         });
     }
   };
+
+
 }

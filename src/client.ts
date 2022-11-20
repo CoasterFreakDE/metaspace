@@ -62,8 +62,8 @@ export function setupClient(socket: WebSocket) {
   canvas.appendChild(cursor)
   canvas.appendChild(createNametag('self', 'self'))
 
-  let x = 500
-  let y = 500
+  let x = window.innerWidth / 2
+  let y = window.innerHeight / 2
   let direction = 0
   let speed = 0
   let keys_down = new Set<string>()
@@ -79,6 +79,9 @@ export function setupClient(socket: WebSocket) {
       cursor.style.left = `${x}px`
       cursor.style.top = `${y}px`
       cursor.style.transform = `rotate(${rotation}deg)`
+      // Update Canvas position so the cursor is always in the center
+      canvas.style.left = `${-(x - (window.innerWidth / 2))}px`
+      canvas.style.top = `${-(y - (window.innerHeight / 2))}px`
       if(!last_state || (last_state.x !== x || last_state.y !== y || last_state.rotation !== rotation)) {
         if(socket.readyState !== WebSocket.OPEN) return
         socket.send(JSON.stringify({event: 'move', player: {x, y, rotation}}))
@@ -192,18 +195,6 @@ export function setupClient(socket: WebSocket) {
     x += dx
     y += dy
 
-    if (x < 0) {
-      x = 0
-    } else if (x > canvas.clientWidth) {
-      x = canvas.clientWidth
-    }
-
-    if (y < 0) {
-      y = 0
-    } else if (y > canvas.clientHeight) {
-      y = canvas.clientHeight
-    }
-
     setCursor(x, y, direction + 90)
     // Update nametag position
     const nametag = document.getElementById(`nametag-self`) as HTMLElement
@@ -221,38 +212,18 @@ export function setupClient(socket: WebSocket) {
     let direction_y = 0
     if (keys_down.has('up')) {
       y -= speed
-      if (y < 0) {
-        y = 0
-      } else if (y > canvas.clientHeight) {
-        y = canvas.clientHeight
-      }
       direction_y += 1
     }
     if (keys_down.has('down')) {
       y += speed
-      if (y < 0) {
-        y = 0
-      } else if (y > (canvas.clientHeight - cursor.clientHeight)) {
-        y = (canvas.clientHeight - cursor.clientHeight)
-      }
       direction_y -= 1
     }
     if (keys_down.has('left')) {
       x -= speed
-      if (x < 0) {
-        x = 0
-      } else if (x > canvas.clientWidth) {
-        x = canvas.clientWidth
-      }
       direction_x -= 1
     }
     if (keys_down.has('right')) {
       x += speed
-      if (x < 0) {
-        x = 0
-      } else if (x > (canvas.clientWidth - cursor.clientWidth)) {
-        x = (canvas.clientWidth - cursor.clientWidth)
-      }
       direction_x += 1
     }
 

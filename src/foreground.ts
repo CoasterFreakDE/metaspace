@@ -17,11 +17,13 @@ let planetsArray: Planet[] = [];
 let images: HTMLImageElement[] = [];
 
 
+
 export function renderPlanetsForeground() {
     const canvas = document.querySelector<HTMLCanvasElement>(".foreground")!;
     const ctx = canvas.getContext("2d")!;
     const width = canvas.width = canvas.clientWidth;
     const height = canvas.height = canvas.clientHeight;
+    const canvas_game = document.querySelector<HTMLDivElement>('.canvas')!
 
     const planets = 10;
     const planetSize = 1000;
@@ -50,8 +52,7 @@ export function renderPlanetsForeground() {
     }
 
     function movePlanets() {
-        const canvas = document.querySelector<HTMLDivElement>('.canvas')!
-        const canvasRect = canvas.getBoundingClientRect()
+        const canvasRect = canvas_game.getBoundingClientRect()
         const canvasPos = new Vector(canvasRect.left, canvasRect.top)
 
         for (let i = 0; i < planets; i++) {

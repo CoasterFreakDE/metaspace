@@ -1,6 +1,8 @@
 import './style.css'
 import {setupClient} from "./client";
 import {setupServerConnection} from "./server-connection";
+import {renderSpaceBackground} from "./background";
+import {renderPlanetsForeground} from "./foreground";
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   
@@ -18,8 +20,12 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <h2>created by CoasterFreakDE</h2>
      </div>
    </div>
+   <canvas class="foreground"></canvas>
+   <canvas class="background"></canvas>
 `
 
 
 const {socket, heartbeat} = setupServerConnection()
 setupClient(socket, heartbeat)
+renderSpaceBackground()
+renderPlanetsForeground()

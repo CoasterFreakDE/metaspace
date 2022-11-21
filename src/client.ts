@@ -1,3 +1,5 @@
+import {registerCallback} from "./callbackFactory";
+import {Vector} from "vector2d";
 
 interface Player {
   id: string,
@@ -76,6 +78,10 @@ export function setupClient(socket: WebSocket, heartbeat: () => void) {
   }
 
   let last_state: State
+
+  registerCallback('getPosition', (_) => {
+    return new Vector(x, y)
+  })
 
   const sendMovement = (x: number, y: number, rotation: number = 0) => {
     if(!last_state || (last_state.x !== x || last_state.y !== y || last_state.rotation !== rotation)) {

@@ -192,3 +192,15 @@
   background-color: var(--darker);
   height: var(--console-height);
 }
+
+.command {
+  color: #ED4245;
+}
+
+.input {
+  color: var(--lighter);
+}
+
+.argument {
+  color: #57F287;
+}

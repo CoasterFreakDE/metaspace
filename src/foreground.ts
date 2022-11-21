@@ -7,7 +7,7 @@ export interface Planet {
 
     radius: number;
 
-    // The planet's mass is used to calculate the gravitational force between planets.
+    // The planet's mass is used to calculate the gravitational force between planets and players.
     mass: number;
 
     imageId: number;

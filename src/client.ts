@@ -1,5 +1,6 @@
 import {registerCallback} from "./callbackFactory";
 import {Vector} from "vector2d";
+import {highlight} from "./console";
 
 interface Player {
   id: string,
@@ -103,21 +104,21 @@ export function setupClient(socket: WebSocket, heartbeat: () => void) {
   setCursor(x, y, direction)
 
 
-  const console = document.querySelector<HTMLInputElement>('#console') as HTMLInputElement
+  const console_input = document.querySelector<HTMLInputElement>('#console') as HTMLInputElement
   const consolePreview = document.querySelector<HTMLDivElement>('#console-preview') as HTMLDivElement
 
-  console.onfocus = () => {
+  console_input.onfocus = () => {
     consolePreview.style.display = 'block'
     socket.send(JSON.stringify({event: 'commands'}))
   }
 
-  console.oninput = () => {
+  console_input.oninput = () => {
     socket.send(JSON.stringify({event: 'commands'}))
   }
 
-  console.onsuspend = () => {
+  console_input.addEventListener('focusout',  () => {
     consolePreview.style.display = 'none'
-  }
+  })
 
 
   document.addEventListener('keydown', (event) => {
@@ -338,12 +339,25 @@ export function setupClient(socket: WebSocket, heartbeat: () => void) {
         break
       case 'commands':
         const commands = data.commands as string[]
-        const console = document.querySelector<HTMLInputElement>('#console') as HTMLInputElement
+        const console_input = document.querySelector<HTMLInputElement>('#console') as HTMLInputElement
+        if(console_input !== document.activeElement) break
         const autocomplete = document.querySelector<HTMLInputElement>('#console-preview') as HTMLInputElement
-        const commands_list = commands.filter((command) => command.startsWith(console.value))
-        autocomplete.innerText = commands_list.join('\n')
+        const command = console_input.value
+        if(!command.startsWith('/')) {
+          autocomplete.innerHTML = ''
+          document.documentElement.style.setProperty('--console-height', `0px`)
+          break
+        }
+
+        const commands_list = commands.filter((command) => command.startsWith(console_input.value)).map((command) => highlight(command, console_input.value))
+        autocomplete.innerHTML = commands_list.join('\n')
         document.documentElement.style.setProperty('--console-height', `${commands_list.length * 20}px`)
         break
+      case 'chat':
+        const message = data.message as string;
+        const sender = data.player as Player;
+        console.log(`${sender.name}: ${message}`);
+        break;
       case 'players':
         const new_players = data.players as Player[]
 

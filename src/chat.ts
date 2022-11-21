@@ -7,21 +7,19 @@ import {highlight} from "./console";
  */
 export class ChatAndConsole {
 
+  private canvas = document.querySelector<HTMLDivElement>('.canvas')!
   private console_input = document.querySelector<HTMLInputElement>('#console') as HTMLInputElement
   private consolePreview = document.querySelector<HTMLDivElement>('#console-preview') as HTMLDivElement
 
-  private createChatBubble(messageID: string, playerID: string, message: string) {
-    const chatBubble = document.createElement('div')
-    chatBubble.classList.add('chat-bubble')
-    chatBubble.id = messageID
-    chatBubble.innerText = message
-    const player = this.playerManagement.players.find(player => player.id === playerID)
-    if(player) {
-      const element = document.getElementById(playerID)
-      if(element) {
-        element.appendChild(chatBubble)
-      }
+  private updateChatBubble(messageID: string, playerID: string, message: string) {
+    let chatBubble = document.getElementById(`chat-bubble-${playerID}`) as HTMLElement
+    if(!chatBubble) {
+      chatBubble = document.createElement('div')
+      chatBubble.classList.add('chat-bubble')
+      chatBubble.id = `chat-bubble-${playerID}`
+      this.canvas.appendChild(chatBubble)
     }
+    chatBubble.innerText = message
   }
 
   constructor(socket: WebSocket, private playerManagement: PlayerManagement) {
@@ -55,13 +53,7 @@ export class ChatAndConsole {
   }
 
   public onMessage(message: string, playerID: string) {
-    const messageID = `message-${Date.now()}`
-    this.createChatBubble(messageID, playerID, message)
-    setTimeout(() => {
-      const element = document.getElementById(messageID)
-      if(element) {
-        element.remove()
-      }
-    }, 15000)
+    const messageID = `${Date.now()}`
+    this.updateChatBubble(messageID, playerID, message)
   }
 }

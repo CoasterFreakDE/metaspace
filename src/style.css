@@ -140,13 +140,26 @@
     color: var(--dark);
 }
 
-.nametag {
+.nametag, .chat-bubble {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   transform: translate(-50%, -100%);
+  max-width: 200px;
+  opacity: 50%;
+  text-align: center;
+  z-index: 4;
+  transition: transform 0.1s ease;
+  background-color: var(--dark);
+  color: var(--lightest);
+  border-radius: 15px;
+  padding: 0 10px 0 10px;
+}
+
+.chat-bubble {
+  transform: translate(-50%, -250%);
   max-width: 200px;
   opacity: 50%;
   text-align: center;

@@ -141,6 +141,11 @@ export function setupClient(socket: WebSocket, heartbeat: () => void, playerMana
           }
           keys_down.clear()
           return
+        } else {
+          if(event.key === 'Enter') {
+            console.focus()
+            return
+          }
         }
         event.preventDefault()
         const key = event.key.toLowerCase()
@@ -316,7 +321,6 @@ export function setupClient(socket: WebSocket, heartbeat: () => void, playerMana
       case 'chat':
         const message = data.message as string;
         const sender = data.player as Player;
-        console.log(`${sender.name}: ${message}`);
         chatManagement.onMessage(message, sender.id);
         break;
       case 'players':

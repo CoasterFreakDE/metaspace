@@ -72,6 +72,14 @@ export class PlayerManagement {
       nametag.style.left = `${enemy.x - 15}px`
       nametag.style.top = `${enemy.y - 30}px`
     });
+
+    // Update positions of chat bubbles
+    this.players.forEach((player) => {
+      const chatBubble = document.getElementById(`chat-bubble-${player.id}`) as HTMLElement
+      if(!chatBubble) return
+      chatBubble.style.left = `${player.x - 15}px`
+      chatBubble.style.top = `${player.y - 60}px`
+    })
   }
 
 }

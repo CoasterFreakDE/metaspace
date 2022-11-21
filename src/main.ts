@@ -2,7 +2,6 @@ import './style.css'
 import {setupClient} from "./client";
 import {setupServerConnection} from "./server-connection";
 import {renderSpaceBackground} from "./background";
-import {renderPlanetsForeground} from "./foreground";
 import {PlayerManagement} from "./players";
 import {ChatAndConsole} from "./chat";
 
@@ -21,6 +20,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <h1>MetaSpace</h1>
       <h2>created by CoasterFreakDE</h2>
      </div>
+     <div class="planets"></div>
    </div>
    <canvas class="foreground"></canvas>
    <canvas class="background"></canvas>
@@ -28,7 +28,6 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 
 const playerManagement = new PlayerManagement()
 const {socket, heartbeat} = setupServerConnection()
-const chatManagement = new ChatAndConsole(socket, playerManagement)
+const chatManagement = new ChatAndConsole(socket)
 setupClient(socket, heartbeat, playerManagement, chatManagement)
 renderSpaceBackground()
-renderPlanetsForeground()

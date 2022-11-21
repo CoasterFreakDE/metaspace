@@ -2,6 +2,7 @@ import {registerCallback} from "./callbackFactory";
 import {Vector} from "vector2d";
 import {Player, PlayerManagement} from "./players";
 import {ChatAndConsole} from "./chat";
+import {getCurrentPlanets, Planet, renderPlanetsForeground} from "./foreground";
 
 interface State {
   x: number,
@@ -52,7 +53,7 @@ function createEnemy(id: string, name: string) {
   return enemy
 }
 
-export function setupClient(socket: WebSocket, heartbeat: () => void, playerManagement: PlayerManagement, chatManagement: ChatAndConsole) {
+export function setupClient(socket: WebSocket, heartbeat: (socket: WebSocket) => void, playerManagement: PlayerManagement, chatManagement: ChatAndConsole) {
   const canvas = document.querySelector<HTMLDivElement>('.canvas')!
   const cursor = createCursor('var(--self)')
   canvas.appendChild(cursor)
@@ -90,6 +91,15 @@ export function setupClient(socket: WebSocket, heartbeat: () => void, playerMana
       // Update Canvas position so the cursor is always in the center
       canvas.style.left = `${-(x - (window.innerWidth / 2))}px`
       canvas.style.top = `${-(y - (window.innerHeight / 2)) - 100}px`
+
+     const planets = document.querySelectorAll<HTMLImageElement>('.planet')
+      if(planets.length == 0) return
+      planets.forEach(planet_element => {
+        const planet = getCurrentPlanets().find(p => p.id === planet_element.id)
+        if(!planet) return
+        planet_element.style.left = `${-(planet.position.x - planet.origin.x)}px`
+        planet_element.style.top = `${-(planet.position.y - planet.origin.y) - 100}px`
+      })
   }
 
   setCursor(x, y, direction)
@@ -144,6 +154,9 @@ export function setupClient(socket: WebSocket, heartbeat: () => void, playerMana
         } else {
           if(event.key === 'Enter') {
             console.focus()
+            return
+          } else if(event.key === ' ') {
+            socket.send(JSON.stringify({event: 'new_planet'}))
             return
           }
         }
@@ -293,7 +306,7 @@ export function setupClient(socket: WebSocket, heartbeat: () => void, playerMana
     switch(data.event) {
       case 'ping':
         socket.send(JSON.stringify({event: 'pong'}))
-        heartbeat()
+        heartbeat(socket)
         break
       case 'rename':
         const new_player = data.player as Player
@@ -345,6 +358,10 @@ export function setupClient(socket: WebSocket, heartbeat: () => void, playerMana
         const players_hud = document.getElementById('players') as HTMLElement
         players_hud.innerHTML = playerManagement.players.length == 1 ? `You are alone` : `${playerManagement.players.length} players connected`
         break
+      case 'world':
+        const planets = data.planets as Planet[]
+        renderPlanetsForeground(planets)
+        break
       case 'move':
         const player = data.player as Player
         const existing = playerManagement.players.find((p) => p.id === player.id)
@@ -352,6 +369,7 @@ export function setupClient(socket: WebSocket, heartbeat: () => void, playerMana
           existing.x = player.x
           existing.y = player.y
           existing.rotation = player.rotation
+          existing.planets_nearby = player.planets_nearby as Planet[]
         }
 
         // Test if self
@@ -360,6 +378,8 @@ export function setupClient(socket: WebSocket, heartbeat: () => void, playerMana
           const coords = document.querySelector<HTMLDivElement>('#coords')!
           coords.innerText = `x: ${player.x.toFixed(2)}, y: ${player.y.toFixed(2)}`
           setCursor(player.x, player.y, player.rotation)
+
+          renderPlanetsForeground(player.planets_nearby)
         }
 
         playerManagement.renderPlayersForeground(data.playerID)

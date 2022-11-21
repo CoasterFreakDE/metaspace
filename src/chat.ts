@@ -1,4 +1,3 @@
-import {PlayerManagement} from "./players";
 import {highlight} from "./console";
 
 /**
@@ -11,7 +10,7 @@ export class ChatAndConsole {
   private console_input = document.querySelector<HTMLInputElement>('#console') as HTMLInputElement
   private consolePreview = document.querySelector<HTMLDivElement>('#console-preview') as HTMLDivElement
 
-  private updateChatBubble(messageID: string, playerID: string, message: string) {
+  private updateChatBubble(playerID: string, message: string) {
     let chatBubble = document.getElementById(`chat-bubble-${playerID}`) as HTMLElement
     if(!chatBubble) {
       chatBubble = document.createElement('div')
@@ -22,7 +21,7 @@ export class ChatAndConsole {
     chatBubble.innerText = message
   }
 
-  constructor(socket: WebSocket, private playerManagement: PlayerManagement) {
+  constructor(socket: WebSocket) {
     this.console_input.onfocus = () => {
       this.consolePreview.style.display = 'block'
       socket.send(JSON.stringify({event: 'commands'}))
@@ -53,7 +52,6 @@ export class ChatAndConsole {
   }
 
   public onMessage(message: string, playerID: string) {
-    const messageID = `${Date.now()}`
-    this.updateChatBubble(messageID, playerID, message)
+    this.updateChatBubble(playerID, message)
   }
 }

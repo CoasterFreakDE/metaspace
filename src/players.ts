@@ -1,3 +1,4 @@
+import {Planet} from "./foreground";
 
 export interface Player {
   id: string,
@@ -10,6 +11,8 @@ export interface Player {
 
   // The player's mass is used to calculate the gravitational force between planets and players.
   mass: number,
+
+  planets_nearby: Planet[],
 
   chatMessages: ChatMessage[],
 }

@@ -1,7 +1,9 @@
 import {Vector} from "vector2d";
 
 export interface Planet {
-    origin: Vector;
+    id: string,
+
+    origin: Vector,
 
     position: Vector;
 
@@ -13,65 +15,28 @@ export interface Planet {
     imageId: number;
 }
 
-let planetsArray: Planet[] = [];
-let images: HTMLImageElement[] = [];
+let last_planets: Planet[] = [];
 
+export function renderPlanetsForeground(planets: Planet[]) {
+    if(planets.length === last_planets.length) return;
+    const planet_group = document.querySelector<HTMLDivElement>(".planets")!;
+    planet_group.innerHTML = "";
 
+    for(const planet of planets) {
+        const planet_element = document.createElement("img") as HTMLImageElement;
+        planet_element.classList.add("planet");
+        planet_element.id = planet.id;
+        planet_element.src = `./assets/planets/planet0${planet.imageId}.png`;
+        planet_element.style.left = `${-(planet.position.x - planet.origin.x)}px`
+        planet_element.style.top = `${-(planet.position.y - planet.origin.y) - 100}px`
 
-export function renderPlanetsForeground() {
-    const canvas = document.querySelector<HTMLCanvasElement>(".foreground")!;
-    const ctx = canvas.getContext("2d")!;
-    const width = canvas.width = canvas.clientWidth;
-    const height = canvas.height = canvas.clientHeight;
-    const canvas_game = document.querySelector<HTMLDivElement>('.canvas')!
-
-    const planets = 10;
-    const planetSize = 1000;
-    const planetMinSize = 200;
-
-    for (let i = 0; i < planets; i++) {
-        const origin = new Vector((Math.random() * width) - (width / 2), (Math.random() * height) - (height / 2))
-        const imageId = Math.floor(Math.random() * 9);
-        const image = new Image();
-        image.src = `./assets/planets/planet0${imageId}.png`;
-        images[imageId] = image;
-        planetsArray.push({
-            origin: origin,
-            position: origin,
-            radius: Math.max(planetMinSize, Math.random() * planetSize),
-            mass: Math.random() * 10,
-            imageId: imageId
-        });
+        planet_element.style.width = `${planet.radius * 2}px`;
+        planet_element.style.height = `${planet.radius * 2}px`
+        planet_group.appendChild(planet_element);
     }
+    last_planets = planets;
+}
 
-    function drawPlanets() {
-        for (let i = 0; i < planets; i++) {
-            const planet = planetsArray[i];
-            ctx.drawImage(images[planet.imageId], planet.position.x, planet.position.y, planet.radius, planet.radius);
-        }
-    }
-
-    function movePlanets() {
-        const canvasRect = canvas_game.getBoundingClientRect()
-        const canvasPos = new Vector(canvasRect.left, canvasRect.top)
-
-        for (let i = 0; i < planets; i++) {
-            const planet = planetsArray[i];
-            const planetPosition = planet.origin;
-
-            // Position of the planet relative to the player
-            const relativePosition = canvasPos.subtract(planetPosition);
-            planet.position.x = relativePosition.x;
-            planet.position.y = relativePosition.y;
-        }
-    }
-
-    function render() {
-        ctx.clearRect(0, 0, width, height);
-        drawPlanets();
-        movePlanets();
-        requestAnimationFrame(render);
-    }
-
-    render();
+export function getCurrentPlanets() {
+    return last_planets;
 }

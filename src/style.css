@@ -217,3 +217,7 @@
 .argument {
   color: #57F287;
 }
+
+.planets .planet {
+  position: fixed;
+}

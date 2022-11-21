@@ -5,7 +5,7 @@ export function setupServerConnection() {
 
   socket.onopen = () => {
     console.log("connected");
-    heartbeat();
+    heartbeat(socket);
   };
 
   socket.onclose = () => {
@@ -20,8 +20,9 @@ export function setupServerConnection() {
   return {socket, heartbeat};
 }
 
-function heartbeat() {
+function heartbeat(socket: WebSocket) {
   clearTimeout(pingTimeout);
+  socket.send(JSON.stringify({ event: "world" }));
 
   // Use `WebSocket#terminate()`, which immediately destroys the connection,
   // instead of `WebSocket#close()`, which waits for the close timer.

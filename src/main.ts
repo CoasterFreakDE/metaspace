@@ -3,6 +3,8 @@ import {setupClient} from "./client";
 import {setupServerConnection} from "./server-connection";
 import {renderSpaceBackground} from "./background";
 import {renderPlanetsForeground} from "./foreground";
+import {PlayerManagement} from "./players";
+import {ChatAndConsole} from "./chat";
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   
@@ -24,8 +26,9 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
    <canvas class="background"></canvas>
 `
 
-
+const playerManagement = new PlayerManagement()
 const {socket, heartbeat} = setupServerConnection()
-setupClient(socket, heartbeat)
+const chatManagement = new ChatAndConsole(socket, playerManagement)
+setupClient(socket, heartbeat, playerManagement, chatManagement)
 renderSpaceBackground()
 renderPlanetsForeground()

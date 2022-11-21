@@ -1,16 +1,7 @@
 import {registerCallback} from "./callbackFactory";
 import {Vector} from "vector2d";
-import {highlight} from "./console";
-
-interface Player {
-  id: string,
-
-  name: string,
-  x: number,
-  y: number,
-  rotation: number,
-  team: 1 | 2
-}
+import {Player, PlayerManagement} from "./players";
+import {ChatAndConsole} from "./chat";
 
 interface State {
   x: number,
@@ -61,7 +52,7 @@ function createEnemy(id: string, name: string) {
   return enemy
 }
 
-export function setupClient(socket: WebSocket, heartbeat: () => void) {
+export function setupClient(socket: WebSocket, heartbeat: () => void, playerManagement: PlayerManagement, chatManagement: ChatAndConsole) {
   const canvas = document.querySelector<HTMLDivElement>('.canvas')!
   const cursor = createCursor('var(--self)')
   canvas.appendChild(cursor)
@@ -102,24 +93,6 @@ export function setupClient(socket: WebSocket, heartbeat: () => void) {
   }
 
   setCursor(x, y, direction)
-
-
-  const console_input = document.querySelector<HTMLInputElement>('#console') as HTMLInputElement
-  const consolePreview = document.querySelector<HTMLDivElement>('#console-preview') as HTMLDivElement
-
-  console_input.onfocus = () => {
-    consolePreview.style.display = 'block'
-    socket.send(JSON.stringify({event: 'commands'}))
-  }
-
-  console_input.oninput = () => {
-    socket.send(JSON.stringify({event: 'commands'}))
-  }
-
-  console_input.addEventListener('focusout',  () => {
-    consolePreview.style.display = 'none'
-  })
-
 
   document.addEventListener('keydown', (event) => {
       const console = document.querySelector<HTMLInputElement>('#console') as HTMLInputElement
@@ -164,6 +137,7 @@ export function setupClient(socket: WebSocket, heartbeat: () => void) {
           if(event.key === 'Enter') {
             socket.send(JSON.stringify({event: 'console', command: console.value}))
             console.value = ''
+            console.blur()
           }
           keys_down.clear()
           return
@@ -308,8 +282,6 @@ export function setupClient(socket: WebSocket, heartbeat: () => void) {
 
     setInterval(move, 1000/60)
 
-  let players: Player[] = []
-
   socket.onmessage = (raw) => {
     const data = JSON.parse(raw.data)
 
@@ -331,7 +303,7 @@ export function setupClient(socket: WebSocket, heartbeat: () => void) {
           nametag.innerText = new_player.name
 
           // Update player in players list
-          const player = players.find((player) => player.id === new_player.id)
+          const player = playerManagement.players.find((player) => player.id === new_player.id)
           if (player) {
             player.name = new_player.name
           }
@@ -339,24 +311,13 @@ export function setupClient(socket: WebSocket, heartbeat: () => void) {
         break
       case 'commands':
         const commands = data.commands as string[]
-        const console_input = document.querySelector<HTMLInputElement>('#console') as HTMLInputElement
-        if(console_input !== document.activeElement) break
-        const autocomplete = document.querySelector<HTMLInputElement>('#console-preview') as HTMLInputElement
-        const command = console_input.value
-        if(!command.startsWith('/')) {
-          autocomplete.innerHTML = ''
-          document.documentElement.style.setProperty('--console-height', `0px`)
-          break
-        }
-
-        const commands_list = commands.filter((command) => command.startsWith(console_input.value)).map((command) => highlight(command, console_input.value))
-        autocomplete.innerHTML = commands_list.join('\n')
-        document.documentElement.style.setProperty('--console-height', `${commands_list.length * 20}px`)
+        chatManagement.updateConsolePreview(commands)
         break
       case 'chat':
         const message = data.message as string;
         const sender = data.player as Player;
         console.log(`${sender.name}: ${message}`);
+        chatManagement.onMessage(message, sender.id);
         break;
       case 'players':
         const new_players = data.players as Player[]
@@ -373,42 +334,16 @@ export function setupClient(socket: WebSocket, heartbeat: () => void) {
           }
         }
 
+        playerManagement.updatePlayers(new_players, data.playerID, createEnemy)
 
-        const old_players = players
-        players = new_players
-        for (const old_player of old_players) {
-          if (old_player.id === data.playerID) continue
-          const new_player = new_players.find(player => player.id === old_player.id)
-          if (!new_player) {
-            const element = document.getElementById(old_player.id)
-            if (element) {
-              element.remove()
-              const nametag = document.getElementById(`nametag-${old_player.id}`) as HTMLElement
-              nametag.remove()
-            }
-          }
-        }
-        for (const new_player of new_players) {
-          if (new_player.id === data.playerID) continue
-          const old_player = old_players.find(player => player.id === new_player.id)
-          if (!old_player) {
-            createEnemy(new_player.id, new_player.name)
-          }
-          const element = document.getElementById(new_player.id)
-          if (element) {
-            element.style.left = `${new_player.x}px`
-            element.style.top = `${new_player.y}px`
-            element.style.transform = `rotate(${new_player.rotation}deg)`
-          }
-        }
 
         // Update hud for players
         const players_hud = document.getElementById('players') as HTMLElement
-        players_hud.innerHTML = players.length == 1 ? `You are alone` : `${players.length} players connected`
+        players_hud.innerHTML = playerManagement.players.length == 1 ? `You are alone` : `${playerManagement.players.length} players connected`
         break
       case 'move':
         const player = data.player as Player
-        const existing = players.find((p) => p.id === player.id)
+        const existing = playerManagement.players.find((p) => p.id === player.id)
         if (existing) {
           existing.x = player.x
           existing.y = player.y
@@ -423,21 +358,7 @@ export function setupClient(socket: WebSocket, heartbeat: () => void) {
           setCursor(player.x, player.y, player.rotation)
         }
 
-        // Update the position of the enemy cursors
-        const enemies = players.filter((p) => p.id !== data.playerID)
-        enemies.forEach((enemy) => {
-          const enemyCursor = document.getElementById(enemy.id) as HTMLElement
-          enemyCursor.style.left = `${enemy.x - 15}px`
-          enemyCursor.style.top = `${enemy.y}px`
-          enemyCursor.style.transform = `rotate(${enemy.rotation}deg)`
-
-          // Update nametag position
-          const nametag = document.getElementById(`nametag-${enemy.id}`) as HTMLElement
-          nametag.style.left = `${enemy.x - 15}px`
-          nametag.style.top = `${enemy.y - 30}px`
-        });
+        playerManagement.renderPlayersForeground(data.playerID)
     }
   };
-
-
 }
